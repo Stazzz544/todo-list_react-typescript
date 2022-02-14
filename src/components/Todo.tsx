@@ -1,62 +1,73 @@
 import { useDispatch } from "react-redux"
 import { useTypedSelector } from "../hooks/useTypedSelector"
-import { newTodoType, TodoActionTypes } from "../types/todoTypes"
 import './Todo.css'
+import { 
+	addTodo, 
+	changeInputValueTodo, 
+	removeTodo, 
+	todoChecked, 
+	todoUnChecked } from "./TodoActionCreators"
 
 const Todo: React.FC = () => {
 
 	const dispatch = useDispatch()
-	const {error, todos, inputValue} = useTypedSelector(state => state.todoReducer)
-	
-	const addTodo = (): void | boolean => {
-		if(!inputValue) {
-			dispatch({type: TodoActionTypes.ERROR_TODO, payload: 'Вы ничего не ввели'})
-			return false
-		}
-		const newTodo: newTodoType = {
-			checked: false,
-			id: Date.now(),
-			text: inputValue,
-		}
-		dispatch({type: TodoActionTypes.ADD_TODO, payload: newTodo})
-	}
-
-	const changeInputValueTodo = (event: React.FormEvent<HTMLInputElement>): void => {
-		dispatch({type: TodoActionTypes.CHANGE_INPUT_VALUE_TODO, payload: event.currentTarget.value})
-	}
-
-	const removeTodo = (id: number): void => {
-		dispatch({type: TodoActionTypes.REMOVE_TODO, payload: id})
-	}
-
+	const { error, todos, inputValue } = useTypedSelector(state => state.todoReducer)
+	let check: boolean = false
 	
 
-
-	return(
+	return (
 		<div className="todos_wrapper">
 			<div className="todos_input-wrapper">
-				<input onInput={changeInputValueTodo} 
-						 className="todos_input" 
-						 value={inputValue}
-						 type="text" />
-				<button className="todos_addBtn" onClick={addTodo}>add todo</button>
+				<input onInput={(event) => changeInputValueTodo(event, dispatch)}
+					className="todos_input"
+					value={inputValue}
+					type="text" />
+				<button className="todos_addBtn" onClick={() => addTodo(inputValue, dispatch)}>add todo</button>
 			</div>
+			{error ? <div className="todo-error">{error}</div> : <></>}
 			{
-				error ? <div>{error}</div> : <></>
+				todos.length < 1 ?
+					<div className='todo-no-todo'>no todos...</div>
+					:
+					<div>
+						<div>
+							{todos.map(todo => {
+								if (!todo.checked) {
+									return (
+										<div key={todo.id} className="todo-wrapper">
+											<input onChange={() => { todoChecked(todo.id, dispatch) }} className="todo-input" id={todo.id.toString()} type="checkbox" />
+											<label className="todo-label" htmlFor={todo.id.toString()}></label>
+											<div className="todo-text" key={todo.id}>{todo.text}</div>
+											<button className="todo-delBtn" onClick={() => { removeTodo(todo.id, todo.checked, dispatch) }}>del</button>
+										</div>)
+								} else { return <></> }
+							}
+							)}
+						</div>
+						<div className="todo-wrapper-done">
+							{
+								todos.forEach(todo => { 
+									todo.checked ? check = true : check = false
+								})
+							}
+							{check ? <div>Завершенные задачи:</div> : <></>}
+							
+							{todos.map(todo => {
+								if (todo.checked) {
+									return (
+										<div key={todo.id} className="todo-wrapper">
+											<input checked onChange={() => { todoUnChecked(todo.id, dispatch) }} className="todo-input" id={todo.id.toString()} type="checkbox" />
+											<label className="todo-label" htmlFor={todo.id.toString()}></label>
+											<div className="todo-text todo-text-checked" key={todo.id}>{todo.text}</div>
+											<button className="todo-delBtn" onClick={() => { removeTodo(todo.id, todo.checked, dispatch) }}>del</button>
+										</div>)
+								} else { return <></> }
+							}
+							)}
+						</div>
+					</div>
 			}
-			{
-			todos.length < 1 ? 
-				<div>no todos...</div>
-			:
-			todos.map(todo => 
-				<div key={todo.id} className="todo-wrapper">
-					<input className="todo-input" id={todo.id.toString()} type="checkbox" />
-					<label className="todo-label" htmlFor={todo.id.toString()}></label>
-					<div className="todo-text" key={todo.id}>{todo.text}</div>
-					<button onClick={() => {removeTodo(todo.id)}}>del</button>
-				</div>
-			)
-			}
+
 		</div>
 	)
 }
